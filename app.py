@@ -46,10 +46,12 @@ def create_tables():
         try:
             # This will create all tables if they don't exist
             db.create_all()
-            logger.info("Database tables created successfully")
+            logger.info("Database tables created or verified successfully")
             return True
         except Exception as e:
             logger.error(f"Error creating database tables: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
 
 # Set up Flask-Login

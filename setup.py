@@ -95,33 +95,35 @@ def initialize_database():
         # Import the app to create the database tables
         from app import app, db
         with app.app_context():
-            # Drop all tables if they exist and create them fresh
-            logger.info("Dropping existing tables if any...")
-            db.drop_all()
-            
-            logger.info("Creating fresh database tables...")
+            # Create tables if they don't exist
+            logger.info("Creating database tables if they don't exist...")
             db.create_all()
             
             # Initialize achievements
             from gamification import initialize_achievements
             initialize_achievements()
             
-            # Create a demo admin user
+            # Check if demo user exists, if not create one
             from models import User
             from werkzeug.security import generate_password_hash
             
-            # Add demo user
-            demo_user = User(
-                username="demo",
-                email="demo@example.com",
-                password_hash=generate_password_hash("demopassword"),
-                points=100,
-                streak=5
-            )
-            db.session.add(demo_user)
-            db.session.commit()
+            demo_user = User.query.filter_by(email="demo@example.com").first()
+            if not demo_user:
+                # Add demo user
+                demo_user = User(
+                    username="demo",
+                    email="demo@example.com",
+                    password_hash=generate_password_hash("demopassword"),
+                    points=100,
+                    streak=5
+                )
+                db.session.add(demo_user)
+                db.session.commit()
+                logger.info("Demo user created: demo@example.com / demopassword")
+            else:
+                logger.info("Demo user already exists")
             
-            logger.info("Database initialized successfully with demo user: demo@example.com / demopassword")
+            logger.info("Database initialized successfully")
             return True
     except Exception as e:
         logger.error(f"Error initializing database: {e}")

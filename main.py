@@ -47,7 +47,10 @@ def auto_initialize():
         
         # Initialize achievements 
         from gamification import initialize_achievements
-        initialize_achievements()
+        with app.app_context():
+            achievements_initialized = initialize_achievements()
+            if not achievements_initialized:
+                logger.warning("Failed to initialize achievements, but continuing...")
         
         # Create flag file to indicate initialization is complete
         Path(INIT_FLAG_FILE).touch()

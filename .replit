@@ -3,3 +3,27 @@ modules = ["python-3.11"]
 [nix]
 channel = "stable-24_05"
 packages = ["unzipNLS"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "app"
+
+[[workflows.workflow]]
+name = "app"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 5000
+
+[deployment]
+run = ["sh", "-c", "python main.py"]
