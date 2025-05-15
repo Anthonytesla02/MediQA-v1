@@ -63,6 +63,18 @@ def auto_initialize():
 # Import app
 from app import app
 
+# For Vercel deployment, run initialization when the module is loaded
+try:
+    if os.environ.get('VERCEL'):
+        if not Path(INIT_FLAG_FILE).exists():
+            auto_initialize()
+        
+        # Note: Background initialization won't work in serverless environment
+        # so we'll skip that for Vercel deployments
+except Exception as e:
+    logger.error(f"Error during Vercel initialization: {e}")
+
+# For local development
 if __name__ == "__main__":
     # Only run initialization if the flag file doesn't exist
     if not Path(INIT_FLAG_FILE).exists():
