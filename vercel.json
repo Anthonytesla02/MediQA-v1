@@ -5,7 +5,8 @@
       "src": "main.py",
       "use": "@vercel/python",
       "config": {
-        "buildCommand": "./vercel-build.sh"
+        "buildCommand": "chmod +x ./vercel-build.sh && ./vercel-build.sh",
+        "maxLambdaSize": "50mb"
       }
     }
   ],
@@ -19,5 +20,13 @@
       "dest": "main.py"
     }
   ],
-  "outputDirectory": ".vercel/output"
+  "env": {
+    "VERCEL": "1"
+  },
+  "functions": {
+    "api/**/*.py": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }

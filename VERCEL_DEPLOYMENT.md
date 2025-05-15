@@ -6,41 +6,63 @@ This document explains how to properly deploy the MediQA application on Vercel.
 
 1. A Vercel account connected to your GitHub repository
 2. The `pharmacy_guide.docx` document in your `attached_assets` directory
+3. PostgreSQL database (Vercel doesn't provide this, so you'll need an external service)
 
 ## Deployment Steps
 
-1. Push all code changes to your GitHub repository
-2. In your Vercel dashboard, create a new project from the GitHub repository
-3. Configure the following settings:
+1. **Ensure your repository is up to date**
+   - The repository must include the `pharmacy_guide.docx` file in the `attached_assets` directory
+   - Make sure you have the latest version of `vercel.json` and `vercel-build.sh`
 
-### Build and Output Settings
+2. **Connect your GitHub repository to Vercel**
+   - Log in to Vercel dashboard
+   - Click "Add New" → "Project"
+   - Select your GitHub repository
 
-- **Framework Preset**: Select "Other" 
-- **Build Command**: Leave default (Vercel will use the configuration in vercel.json)
-- **Output Directory**: Leave default
+3. **Configure the deployment settings**
+   - **Framework Preset**: Select "Other" 
+   - **Build Command**: Leave default (Vercel will use the configuration in vercel.json)
+   - **Output Directory**: Leave default
+   - **Root Directory**: Leave as `.` (root of the repository)
 
-### Environment Variables
+4. **Set up Environment Variables**
+   - In the project settings, add the following environment variables:
+     - `MISTRAL_API_KEY`: Your Mistral AI API key
+     - `DATABASE_URL`: Your PostgreSQL database connection string
+     - `SESSION_SECRET`: A secret key for session management
+     - `VERCEL`: Set to `1` (to enable Vercel-specific document handling)
 
-Add the following environment variables:
+5. **Deploy the Project**
+   - Click "Deploy" to start the deployment process
+   - The build script will automatically copy the document file to the right locations
 
-- `MISTRAL_API_KEY`: Your Mistral AI API key
-- `DATABASE_URL`: Your PostgreSQL database connection string
-- `SESSION_SECRET`: A secret key for session management (or use the one in config.py)
+## How This Deployment Works
 
-## Important Notes
+The deployment uses a custom build script (`vercel-build.sh`) to ensure the document is accessible in the Vercel environment:
 
-### Document Access
+1. During build, the document is copied to multiple locations:
+   - To `.vercel/output/static/attached_assets/` for serving as a static file
+   - To `/tmp/attached_assets/` for direct filesystem access by the application
 
-The MediQA application relies on accessing the document file `pharmacy_guide.docx` which is included in your repository. The application has been modified to use Vercel's static file serving capability to access this document.
+2. The application has been modified to look for the document in these locations when running on Vercel.
 
-### Known Limitations
+## Troubleshooting
 
-1. **Document Access**: In some Vercel serverless environments, the application may have difficulty accessing the document. If you encounter the message "The medical guidelines document could not be loaded in this deployment environment", this is a known limitation with Vercel's serverless architecture.
+If you encounter issues with document access:
 
-2. **Database Persistence**: Ensure your `DATABASE_URL` points to an externally hosted PostgreSQL database (like Supabase, Neon, or Railway) as Vercel doesn't provide built-in database hosting.
+1. **Check build logs**
+   - Verify that the `vercel-build.sh` script executed successfully
+   - Look for messages confirming the document was copied correctly
 
-3. **Cold Starts**: Vercel's serverless functions may experience "cold starts" where the first request after a period of inactivity takes longer to respond.
+2. **Try redeploying**
+   - Sometimes a fresh deployment can resolve issues
+
+3. **Check environment variables**
+   - Ensure the `VERCEL` environment variable is set to `1`
+
+4. **Verify document is in the repository**
+   - The `pharmacy_guide.docx` must be committed to your repository in the `attached_assets` directory
 
 ## Alternative Deployment Options
 
-If you encounter persistent issues with document access on Vercel, consider using Render.com as described in the `DEPLOYMENT.md` file, which is better suited for this application's architecture.
+If you continue to experience issues with Vercel deployment, consider using Render.com as described in the `DEPLOYMENT.md` file. Render's architecture is better suited for applications that require persistent file access and background processing.
