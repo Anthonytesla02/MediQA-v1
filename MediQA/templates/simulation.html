@@ -1,0 +1,212 @@
+{% extends "layout.html" %}
+
+{% block head_content %}
+<script src="{{ url_for('static', filename='js/simulation.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+    <div class="simulation-header">
+        <h2>Case Simulation</h2>
+        <p>Practice diagnosing and treating medical conditions based on real-world scenarios</p>
+    </div>
+    
+    <div class="simulation-controls">
+        <button id="new-case-button" class="btn btn-primary">
+            <i data-feather="refresh-cw"></i> New Case
+        </button>
+    </div>
+    
+    <div id="presenting-complaint" class="presenting-complaint">
+        <!-- Presenting complaint will be loaded here -->
+    </div>
+    
+    <div id="questions-container" class="questions-container">
+        <!-- Sequential questions will be displayed here one by one -->
+    </div>
+    
+    <div id="results-container" class="results-container" style="display: none;">
+        <!-- Results will be shown here after submission -->
+    </div>
+</div>
+
+<style>
+    .simulation-container {
+        padding: 1rem 0;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .simulation-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .simulation-header h2 {
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .simulation-header p {
+        color: var(--text-light);
+    }
+    
+    .simulation-controls {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Presenting complaint card styles */
+    .presenting-complaint {
+        margin-bottom: 1.5rem;
+    }
+    
+    .complaint-card {
+        background-color: var(--card-background);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .complaint-card h3 {
+        margin: 0 0 1rem 0;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+    
+    .complaint-card p {
+        margin: 0;
+        line-height: 1.6;
+    }
+    
+    /* Question & Answer styles */
+    .questions-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .question-card {
+        background-color: var(--card-background);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .question-card h3 {
+        margin: 0 0 1rem 0;
+        color: var(--primary-color);
+    }
+    
+    .answer-input {
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+    
+    .answer-input textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        font-family: inherit;
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .answer-input textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+    
+    .submit-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+    
+    .submit-btn:hover {
+        background-color: var(--primary-color-dark);
+    }
+    
+    /* Results styles */
+    .results-container {
+        background-color: var(--card-background);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+    }
+    
+    .result-title {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .result-item {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .result-question {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .result-user-answer {
+        background-color: rgba(0,0,0,0.03);
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 0.5rem;
+    }
+    
+    .result-correct-answer {
+        background-color: rgba(0, 128, 0, 0.1);
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 0.5rem;
+    }
+    
+    .result-feedback {
+        font-style: italic;
+        color: var(--text-light);
+    }
+    
+    /* Loading state */
+    .skeleton-loader {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: var(--border-radius);
+        height: 150px;
+        margin-bottom: 1rem;
+    }
+    
+    @keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* Hidden questions are not displayed initially */
+    .hidden-question {
+        display: none;
+    }
+</style>
+{% endblock %}
