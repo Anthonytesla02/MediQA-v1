@@ -4,9 +4,17 @@
     {
       "src": "main.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "attached_assets/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/attached_assets/(.*)",
+      "dest": "/attached_assets/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "main.py"

@@ -89,6 +89,12 @@ def get_diagnosis_response(user_query):
     # Generate context from document
     context = generate_context_for_query(user_query)
     
+    # Check for specific document loading error messages
+    if "could not be loaded in this deployment environment" in context or "could not be accessed" in context:
+        logger.error("Document access issue detected in AI response")
+        return ("I'm unable to access the medical knowledge base in this deployment environment. "
+                "This is a limitation of the current serverless setup. Please try the application in its original environment.")
+    
     # Check if it's a treatment or diagnosis query to customize prompt
     query_lower = user_query.lower()
     

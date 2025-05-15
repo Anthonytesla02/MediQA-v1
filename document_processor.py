@@ -1,6 +1,8 @@
 import os
 import logging
 import docx
+import requests
+from io import BytesIO
 from config import DOCUMENT_PATH
 
 logger = logging.getLogger(__name__)
@@ -9,10 +11,16 @@ logger = logging.getLogger(__name__)
 document_content = []
 document_sections = {}
 
-def extract_text_from_docx(docx_path):
-    """Extract text from a .docx file."""
+def extract_text_from_docx(docx_path_or_bytes):
+    """Extract text from a .docx file or BytesIO object."""
     try:
-        doc = docx.Document(docx_path)
+        # Check if we received a BytesIO object directly (for Vercel environment)
+        if isinstance(docx_path_or_bytes, BytesIO):
+            doc = docx.Document(docx_path_or_bytes)
+        else:
+            # Traditional file path approach
+            doc = docx.Document(docx_path_or_bytes)
+            
         text = []
         
         for paragraph in doc.paragraphs:
@@ -52,16 +60,91 @@ def parse_document_structure(content):
     
     return sections
 
+def try_vercel_document_loading():
+    """Try to load document in a Vercel-compatible way via URL."""
+    try:
+        # Check if we're running on Vercel
+        is_vercel = os.environ.get('VERCEL') == '1'
+        
+        if is_vercel or 'VERCEL_URL' in os.environ:
+            logger.info("Detected Vercel environment, attempting to load document from deployment URL")
+            
+            # Get the URL from Vercel environment
+            vercel_url = os.environ.get('VERCEL_URL', '')
+            if not vercel_url:
+                logger.warning("VERCEL_URL environment variable not set")
+                # Try an alternate approach using environment variables
+                if 'PROJECT_NAME' in os.environ:
+                    project_name = os.environ.get('PROJECT_NAME')
+                    vercel_url = f"{project_name}.vercel.app"
+                    logger.info(f"Using constructed URL from PROJECT_NAME: {vercel_url}")
+                else:
+                    return None
+            
+            # Construct the URL to the document
+            document_url = f"https://{vercel_url}/attached_assets/pharmacy_guide.docx"
+            logger.info(f"Attempting to fetch document from: {document_url}")
+            
+            # Fetch the document
+            response = requests.get(document_url, timeout=10)
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch document: Status {response.status_code}")
+                
+                # Try alternative URLs
+                alt_urls = [
+                    f"https://{vercel_url}/attached_assets/pharmacy_guide.docx",
+                    f"https://{vercel_url.replace('https://', '')}/attached_assets/pharmacy_guide.docx",
+                    f"https://{vercel_url.replace('http://', '')}/attached_assets/pharmacy_guide.docx"
+                ]
+                
+                for alt_url in alt_urls:
+                    if alt_url != document_url:  # Skip if same as original URL
+                        logger.info(f"Trying alternative URL: {alt_url}")
+                        try:
+                            alt_response = requests.get(alt_url, timeout=10)
+                            if alt_response.status_code == 200:
+                                logger.info(f"Successfully fetched document from alternative URL: {alt_url}")
+                                document_bytes = BytesIO(alt_response.content)
+                                return document_bytes
+                        except Exception as e:
+                            logger.error(f"Error fetching from alternative URL {alt_url}: {e}")
+                
+                return None
+                
+            # Load the document from bytes
+            document_bytes = BytesIO(response.content)
+            return document_bytes
+            
+        return None
+    except Exception as e:
+        logger.error(f"Error in Vercel document loading: {e}")
+        return None
+
 def initialize_document_processor():
     """Initialize the document processor by loading and parsing the document."""
     global document_content, document_sections
     
-    if not os.path.exists(DOCUMENT_PATH):
-        logger.error(f"Document not found at {DOCUMENT_PATH}")
-        return False
+    # First try Vercel-specific loading
+    document_bytes = try_vercel_document_loading()
     
-    logger.info(f"Loading document from {DOCUMENT_PATH}")
-    document_content = extract_text_from_docx(DOCUMENT_PATH)
+    if document_bytes:
+        # Vercel path - load from bytes
+        logger.info("Loading document from Vercel deployment")
+        document_content = extract_text_from_docx(document_bytes)
+    else:
+        # Traditional path - load from file
+        if not os.path.exists(DOCUMENT_PATH):
+            logger.error(f"Document not found at {DOCUMENT_PATH}")
+            
+            # Check if we're on Vercel and need to leave a message for debugging
+            if os.environ.get('VERCEL') == '1' or 'VERCEL_URL' in os.environ:
+                logger.warning("Running on Vercel without access to document file.")
+                logger.warning("Please check that the document is properly deployed.")
+            
+            return False
+        
+        logger.info(f"Loading document from {DOCUMENT_PATH}")
+        document_content = extract_text_from_docx(DOCUMENT_PATH)
     
     if not document_content:
         logger.error("Failed to extract content from document")

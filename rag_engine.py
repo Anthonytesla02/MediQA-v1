@@ -43,6 +43,7 @@ def search_similar_chunks(query, k=5):
     """Search for chunks similar to the query using enhanced keyword matching."""
     if not document_chunks:
         logger.error("Document chunks not initialized")
+        logger.warning("This could be due to document loading issues in the Vercel environment")
         return []
     
     try:
@@ -110,6 +111,14 @@ def generate_context_for_query(query):
     # Increase result count to get more potentially relevant chunks
     chunks = search_similar_chunks(query, k=5)
     
+    # Check if document is not loaded at all (common in Vercel serverless environment)
+    if not document_chunks:
+        logger.warning("Document chunks not available - likely due to document loading issues in Vercel environment")
+        # Return a more specific message for this case
+        if os.environ.get('VERCEL') == '1' or 'VERCEL_URL' in os.environ:
+            logger.error("Running in Vercel environment without document access")
+            return "The medical guidelines document could not be loaded in this deployment environment. This is a known limitation with the current serverless setup."
+    
     # Extract key medical terms that might be mentioned in document headers
     medical_terms = re.findall(r'\b[A-Z][a-z]{3,}(?:\s+[A-Z][a-z]{3,}){0,3}\b', query)
     disease_mentions = [term for term in medical_terms if len(term) > 5]  # Likely disease names are longer
@@ -118,6 +127,10 @@ def generate_context_for_query(query):
         # Enhanced fallback to section-based search 
         try:
             sections = get_document_sections()
+            if not sections:
+                logger.error("Document sections not available")
+                return "The guidelines document could not be accessed. This may be a limitation of the current deployment environment."
+                
             relevant_sections = []
             
             # Check for disease/treatment terms in chapter and section names
